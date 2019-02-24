@@ -90,68 +90,63 @@ func (a *app) getAll() ([]Todo, error) {
 func (a *app) getTodo(taskID int) ([]Todo, error) {
 	var tasks = make([]Todo, 0)
 
-	columns, err := a.db.Query("select id, task, get from todo;")
+	rows, err := a.db.Query(fmt.Sprintf("select id, task, done from todo where id = %d", taskID))
+	// rows, err := a.db.Query("select id, task, done from todo")
 
 	if err != nil {
 		return nil, err
 	}
 
-	defer columns.Close()
+	defer rows.Close()
 
 	var id int
 	var task string
 	var done int
 
-	for columns.Next() {
-		if err := columns.Scan(&id, &task, &done); err != nil {
+	for rows.Next() {
+		if err := rows.Scan(&id, &task, &done); err != nil {
 			log.Printf("Could not read data from Todo table - %s", err)
 		} else {
+			// if id != taskID {
+			// 	continue
+			// }
+
 			if done == 0 {
 				tasks = append(tasks, Todo{id, task, false})
 			} else {
 				tasks = append(tasks, Todo{id, task, true})
 			}
-
 		}
 	}
 
 	return tasks, nil
 }
 
-func (a *app) addTodo(task string) (int, error) {
+func (a *app) addTodo(task string) (int64, error) {
 	var err error
 	var statement *sql.Stmt
 
 	if statement, err = a.db.Prepare("insert into todo (task) values (?)"); err != nil {
-		log.Fatal(err)
+		return 0, err
 	}
 
 	defer statement.Close()
 
-	res, err := statement.Exec("dummy task 1")
+	res, err := statement.Exec(task)
 
 	if err != nil {
-		log.Fatal(err)
-
+		return 0, err
 	}
-
-	lastId, err := res.LastInsertId()
-	if err != nil {
-		log.Fatal(err)
-
-		log.Printf("ID = %d", lastId)
-	}
-	return 0, err
 
 	// do something to retrieve the inserted ID from result and return it
-
+	return res.LastInsertId()
 }
 
 func (a *app) done(taskID int) error {
 	var err error
 	var statement *sql.Stmt
 
-	if statement, err = a.db.Prepare("update into todo (task) values(?)"); err != nil { // Update the query here to an update query
+	if statement, err = a.db.Prepare("update todo set done = 1 where id = ?"); err != nil { // Update the query here to an update query
 		return err
 	}
 
@@ -191,7 +186,9 @@ func (a *app) handleAddTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, Todo{id, task.Task, false})
+	// We're only every going to compile for 64 bit architectures, therefore
+	// this is a safe cast to do.
+	respondWithJSON(w, http.StatusOK, Todo{int(id), task.Task, false})
 }
 
 func (a *app) handleGetTodo(w http.ResponseWriter, r *http.Request) {
@@ -259,7 +256,7 @@ func (a *app) run() {
 }
 
 func main() {
-	a, err := NewApp("dbpath")
+	a, err := NewApp("./todo.db")
 
 	if err != nil {
 		log.Fatal(err)
@@ -271,7 +268,7 @@ func main() {
 func NewApp(dbPath string) (a *app, err error) {
 	a = &app{}
 
-	if err := a.initializeDb("dbpath"); err != nil {
+	if err := a.initializeDb(dbPath); err != nil {
 		return nil, fmt.Errorf("Could not initialize database: %s", err)
 	}
 

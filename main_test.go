@@ -88,11 +88,11 @@ func TestMain(m *testing.M) {
 
 	flag.Parse()
 
-	//code := m.Run()
+	code := m.Run()
 
 	deleteDb(dbPath)
 
-	os.Exit(0)
+	os.Exit(code)
 }
 
 func Test_GetAllTasks(t *testing.T) {
@@ -102,12 +102,12 @@ func Test_GetAllTasks(t *testing.T) {
 		t.Fatalf("Could not get all tasks - %v", err)
 	}
 
-	if len(tasks) != 1 {
+	if len(tasks) != 3 {
 		t.Errorf("Expected 3 tasks, got %d", len(tasks))
 	}
 
 	for i, task := range tasks {
-		taskID := i + 3
+		taskID := i + 1
 		if task.ID != taskID {
 			t.Errorf("Task %d expected id: %d, got %d", taskID, taskID, task.ID)
 		}
@@ -142,7 +142,7 @@ func Test_GetTask(t *testing.T) {
 }
 
 func Test_AddTask(t *testing.T) {
-	var taskID int
+	var taskID int64
 	var err error
 
 	if taskID, err = testApp.addTodo("test task 1"); err != nil {
@@ -167,7 +167,7 @@ func Test_TaskDone(t *testing.T) {
 		t.Errorf("could not retrieve tasks after mark done - %v", err)
 	}
 
-	if len(tasks) != 3 {
+	if len(tasks) != 1 {
 		t.Errorf("%d tasks returned after mark done, expecting 1", len(tasks))
 	}
 
