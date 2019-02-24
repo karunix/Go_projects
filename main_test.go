@@ -92,7 +92,7 @@ func TestMain(m *testing.M) {
 
 	deleteDb(dbPath)
 
-	os.Remove("dummy task 1")
+	os.Exit(0)
 }
 
 func Test_GetAllTasks(t *testing.T) {

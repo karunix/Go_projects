@@ -90,20 +90,20 @@ func (a *app) getAll() ([]Todo, error) {
 func (a *app) getTodo(taskID int) ([]Todo, error) {
 	var tasks = make([]Todo, 0)
 
-	rows, err := a.db.Query("select id, task, get from todo;")
+	columns, err := a.db.Query("select id, task, get from todo;")
 
 	if err != nil {
 		return nil, err
 	}
 
-	defer rows.Close()
+	defer columns.Close()
 
 	var id int
 	var task string
 	var done int
 
-	for rows.Next() {
-		if err := rows.Scan(&id, &task, &done); err != nil {
+	for columns.Next() {
+		if err := columns.Scan(&id, &task, &done); err != nil {
 			log.Printf("Could not read data from Todo table - %s", err)
 		} else {
 			if done == 0 {
@@ -259,7 +259,7 @@ func (a *app) run() {
 }
 
 func main() {
-	a, err := NewApp("./todo.db")
+	a, err := NewApp("dbpath")
 
 	if err != nil {
 		log.Fatal(err)
@@ -271,7 +271,7 @@ func main() {
 func NewApp(dbPath string) (a *app, err error) {
 	a = &app{}
 
-	if err := a.initializeDb("./todo.db"); err != nil {
+	if err := a.initializeDb("dbpath"); err != nil {
 		return nil, fmt.Errorf("Could not initialize database: %s", err)
 	}
 
